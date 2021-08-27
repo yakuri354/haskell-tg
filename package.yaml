@@ -31,6 +31,8 @@ dependencies:
 - bytestring
 - hint
 - text
+- process
+- random-strings
 
 library:
   source-dirs: src
@@ -39,17 +41,6 @@ executables:
   haskell-tg-exe:
     main:                Main.hs
     source-dirs:         app
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - haskell-tg
-
-tests:
-  haskell-tg-test:
-    main:                Spec.hs
-    source-dirs:         test
     ghc-options:
     - -threaded
     - -rtsopts
