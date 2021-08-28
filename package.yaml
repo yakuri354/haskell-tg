@@ -32,7 +32,10 @@ dependencies:
 - hint
 - text
 - process
+- memory
+- cryptonite
 - random-strings
+- servant-client
 
 library:
   source-dirs: src

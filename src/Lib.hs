@@ -22,7 +22,7 @@ import Control.Exception.Base (catch, SomeException (SomeException), AsyncExcept
 import qualified Data.Bifunctor as BF
 import Control.Exception (SomeException(SomeException))
 import GHC.Exception (SomeException(SomeException))
-import Control.Monad ( MonadPlus(mplus), when, mfilter )
+import Control.Monad ( MonadPlus(mplus), when, mfilter, unless )
 import Data.List (stripPrefix)
 import Data.Function ( (&) )
 import Data.Char (isDigit)
@@ -34,8 +34,13 @@ import Telegram.Bot.Simple.Reply (ReplyMessage(replyMessageReplyToMessageId))
 import Telegram.Bot.API.InlineMode.InlineQueryResult (InlineQueryResultType(InlineQueryResultArticle), InlineQueryResult (inlineQueryResultId, InlineQueryResult), InlineQueryResultId (InlineQueryResultId))
 import Telegram.Bot.API.InlineMode.InputMessageContent (defaultInputTextMessageContent, InputMessageContent (InputTextMessageContent))
 import Test.RandomStrings (randomASCII, randomString)
-import Data.Text.Encoding (decodeUtf8)
-import Debug.Trace (trace, traceShowId)
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import Servant.Client (ClientM)
+import Crypto.Hash.Algorithms
+import Crypto.Hash
+import qualified Telegram.Bot.API as API
+import Data.Memory.Encoding.Base32 (toBase32)
+import Data.ByteArray.Encoding (convertToBase, Base (Base64))
 
 type Model = ()
 data Action =
@@ -47,6 +52,9 @@ data Action =
 
 muevalOpts = ["-t", "5", "-i"]
 typeOnlyOpts = ["-T"]
+
+hashContent :: Text -> Text
+hashContent text = decodeUtf8 $ convertToBase Base64 (hash $ encodeUtf8 text :: Digest SHA384)
 
 boldMD :: Text -> Text
 boldMD text = T.concat ["*", T.replace "*" "\\*" text, "*"]
@@ -73,12 +81,24 @@ parseOutput raw =
             T.concat [boldMD "Result: ", codeMD $ last lines]
         ]
 
+answerInline :: Maybe Text -> Maybe Text -> InlineQueryId -> ClientM (Response Bool)
+answerInline title content query =
+    answerInlineQuery $
+        AnswerInlineQueryRequest query [
+            InlineQueryResult
+                InlineQueryResultArticle 
+                (InlineQueryResultId (hashContent $ fromMaybe "empty" content))
+                title
+                ((\x -> InputTextMessageContent x (Just "MarkdownV2") (Just False))
+                    <$> content)
+        ]
+
 invokeMueval :: Text -> [String] -> IO Text
 invokeMueval input opts = do
             (code, out, err) <- readProcessWithExitCode "mueval" (opts ++ ["-e", T.unpack input]) ""
             return $ case code of 
                     ExitSuccess -> parseOutput $ T.pack out
-                    ExitFailure _ -> traceShowId $ T.unlines [
+                    ExitFailure _ -> T.unlines [
                             boldMD "Expression: " `T.append` T.strip input,
                             "",
                             codeMD $ T.pack $ chooseOne out err "Internal error occured while evaluating"
@@ -123,35 +143,21 @@ evalBot = let
                 EditInlineMessageId msg -> msg
             liftIO $ putStrLn $ "Expr: " ++ T.unpack input ++ " from " ++ show chatID
             res <- liftIO $ invokeMueval input muevalOpts
-            reply (toReplyMessage $ traceShowId res) { 
+            reply (toReplyMessage res) { 
                   replyMessageReplyToMessageId = msgID
                 , replyMessageParseMode = Just MarkdownV2 
                 }
             return NoOp
         Inline query input -> model <# do
-            -- rand <- liftIO $ randomString randomASCII 64
-            let rand = "1"
             if T.null (T.strip input) then do
                 liftIO $ putStrLn "Empty inline query received"
-                liftClientM $ answerInlineQuery $
-                    AnswerInlineQueryRequest query [
-                        InlineQueryResult
-                            InlineQueryResultArticle 
-                            (InlineQueryResultId $ T.pack rand)
-                            (Just "Type the expression")
-                            (Just (defaultInputTextMessageContent "Type the expression here"))
-                    ] 
+                sent <- liftClientM $ answerInline (Just "Type the expression") Nothing query
+                unless (responseResult sent) $ liftIO $ putStrLn "WARNING: Inline query not sent"
             else do
+                liftIO $ putStrLn $ "Inline query: " ++ T.unpack input
                 res <- liftIO $ invokeMueval input muevalOpts
-                liftIO $ putStrLn $ "Inline query: " ++ T.unpack input ++ "; Result: " ++ T.unpack res
-                liftClientM $ answerInlineQuery $
-                    AnswerInlineQueryRequest query [
-                        InlineQueryResult
-                            InlineQueryResultArticle 
-                            (InlineQueryResultId $ T.pack rand)
-                            (Just input)
-                            (Just $ InputTextMessageContent res (Just "MarkdownV2") (Just False))
-                    ]
+                sent <- liftClientM $ answerInline (Just "Evaluate") (Just res) query
+                unless (responseResult sent) $ liftIO $ putStrLn "WARNING: Inline query not sent"
             return NoOp
     in BotApp { botInitialModel = ()
                 , botAction = flip updateToAction
