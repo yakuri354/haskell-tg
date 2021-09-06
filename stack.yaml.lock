@@ -25,9 +25,27 @@ packages:
       sha256: 5a382966fdd8d5220b5791f3bff6db00d2ea29235e2716dadd52461b8a8beb97
   original:
     hackage: random-strings-0.1.1.0@sha256:935a7a23dab45411960df77636a29b44ce42b89eeb15f2b1e809d771491fa677,2517
+- completed:
+    size: 31315
+    url: https://github.com/yakuri354/telegram-bot-simple/archive/e82619e1341e8d089c0f791b29f990caf0978add.tar.gz
+    name: telegram-bot-simple
+    version: 0.3.7
+    sha256: 6a78a8b111ad3dec15dff0c054a991c82a6485ce9e5f961c018c622b2c738def
+    pantry-tree:
+      size: 2347
+      sha256: 16d2f31f2e9c759f73e991ae29ecf63aacea2df2f5cab94cb11c02daefbd08ee
+  original:
+    url: https://github.com/yakuri354/telegram-bot-simple/archive/e82619e1341e8d089c0f791b29f990caf0978add.tar.gz
+- completed:
+    hackage: servant-multipart-client-0.12.1@sha256:d043063e2f33eab86840f87c4bdb16eb3fe4a5847a0b118e4f4265cf3ba4c9b3,1892
+    pantry-tree:
+      size: 400
+      sha256: cb02eea7894a94e5dedf5cb74fd5fc6b989711ebb46a0e14d77f74f3b89dcbe0
+  original:
+    hackage: servant-multipart-client-0.12.1@sha256:d043063e2f33eab86840f87c4bdb16eb3fe4a5847a0b118e4f4265cf3ba4c9b3,1892
 snapshots:
 - completed:
-    size: 576757
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2021/8/24.yaml
-    sha256: fb498ea7bc3e8503f5d10f9a00b0a1f7acf5b58c2caa46cc854f099748de0913
-  original: nightly-2021-08-24
+    size: 585393
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/0.yaml
+    sha256: c632012da648385b9fa3c29f4e0afd56ead299f1c5528ee789058be410e883c0
+  original: lts-18.0

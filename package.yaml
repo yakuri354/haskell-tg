@@ -21,7 +21,7 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - base >= 4.7 && < 5
-- telegram-bot-simple >= 0.3.7
+- telegram-bot-simple
 - mueval >= 0.9.3
 - simple-reflect
 - QuickCheck

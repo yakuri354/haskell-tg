@@ -17,7 +17,7 @@
 #
 # resolver: ./custom-snapshot.yaml
 # resolver: https://example.com/snapshots/2018-01-01.yaml
-resolver: nightly-2021-08-24
+resolver: lts-18.0
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -43,6 +43,10 @@ extra-deps:
   - mueval-0.9.3@sha256:9ecdbdc8f28ed7bc3f6f6cb5c2708e69f3b099db812bd2b8a51730915f7dab9e,2077
   - show-0.6@sha256:073c283f62d56cab2a2de5455125c7fc2d55642bac4cf0e778ed6525226a44ec,903
   - random-strings-0.1.1.0@sha256:935a7a23dab45411960df77636a29b44ce42b89eeb15f2b1e809d771491fa677,2517
+  # - telegram-bot-simple-0.3.7@sha256:f7a7edb82b697d332523d0affce14bcf907d9b00c91c40d327eea8104259a6a7,3807
+  - github: yakuri354/telegram-bot-simple
+    commit: e82619e1341e8d089c0f791b29f990caf0978add
+  - servant-multipart-client-0.12.1@sha256:d043063e2f33eab86840f87c4bdb16eb3fe4a5847a0b118e4f4265cf3ba4c9b3,1892
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

@@ -38,23 +38,35 @@ import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Servant.Client (ClientM)
 import Crypto.Hash.Algorithms
 import Crypto.Hash
+import Debug.Pretty.Simple ( pTraceShowId )
 import qualified Telegram.Bot.API as API
+import Telegram.Bot.API.InlineMode
 import Data.Memory.Encoding.Base32 (toBase32)
-import Data.ByteArray.Encoding (convertToBase, Base (Base64))
+import Data.ByteArray.Encoding (convertToBase, Base (Base64, Base32))
+import Telegram.Bot.API.Types
 
 type Model = ()
 data Action =
      NoOp 
      | Start
-     | Inline InlineQueryId Text
+     | InlineQ InlineQueryId Text
+     | InlineChosen ChosenInlineResult
      | Eval Text
+     | Callback CallbackQuery
      deriving (Show)
 
 muevalOpts = ["-t", "5", "-i"]
 typeOnlyOpts = ["-T"]
 
+dummyMarkup = SomeInlineKeyboardMarkup $
+    InlineKeyboardMarkup { 
+        inlineKeyboardMarkupInlineKeyboard = [
+            [callbackButton "Evaluating..." "BUTTONCLICKED"]
+        ] 
+    }
+
 hashContent :: Text -> Text
-hashContent text = decodeUtf8 $ convertToBase Base64 (hash $ encodeUtf8 text :: Digest SHA384)
+hashContent text = T.take 64 $ decodeUtf8 $ convertToBase Base32 (hash $ encodeUtf8 text :: Digest SHA384)
 
 boldMD :: Text -> Text
 boldMD text = T.concat ["*", T.replace "*" "\\*" text, "*"]
@@ -81,17 +93,25 @@ parseOutput raw =
             T.concat [boldMD "Result: ", codeMD $ last lines]
         ]
 
-answerInline :: Maybe Text -> Maybe Text -> InlineQueryId -> ClientM (Response Bool)
-answerInline title content query =
-    answerInlineQuery $
-        AnswerInlineQueryRequest query [
-            InlineQueryResult
-                InlineQueryResultArticle 
-                (InlineQueryResultId (hashContent $ fromMaybe "empty" content))
-                title
-                ((\x -> InputTextMessageContent x (Just "MarkdownV2") (Just False))
-                    <$> content)
-        ]
+evalPending :: Text -> Text
+evalPending input =
+    boldMD "Expression: " `T.append` codeMD input
+
+answerInline :: Maybe Text -> Maybe Text -> Maybe SomeReplyMarkup -> InlineQueryId -> ClientM (Response Bool, Text)
+answerInline title content markup query = 
+    (, msgHash) 
+        <$> answerInlineQuery
+            (AnswerInlineQueryRequest query [
+                InlineQueryResult
+                    InlineQueryResultArticle 
+                    (InlineQueryResultId msgHash)
+                    title
+                    ((\x -> InputTextMessageContent x (Just "MarkdownV2") (Just False))
+                        <$> content)
+                    markup
+            ])
+    where
+        msgHash = hashContent $ fromMaybe "empty" content
 
 invokeMueval :: Text -> [String] -> IO Text
 invokeMueval input opts = do
@@ -99,7 +119,7 @@ invokeMueval input opts = do
             return $ case code of 
                     ExitSuccess -> parseOutput $ T.pack out
                     ExitFailure _ -> T.unlines [
-                            boldMD "Expression: " `T.append` T.strip input,
+                            boldMD "Expression: " `T.append` codeMD (T.strip input),
                             "",
                             codeMD $ T.pack $ chooseOne out err "Internal error occured while evaluating"
                         ]
@@ -117,8 +137,12 @@ evalBot = let
             query <- updateInlineQuery update
             let queryId = inlineQueryId query
             let msg = inlineQueryQuery query
-            Just $ Inline queryId msg
-        | otherwise = updateMessage update 
+            Just $ InlineQ queryId msg
+        | isJust $ updateChosenInlineResult update = 
+            updateChosenInlineResult update >>= Just . InlineChosen 
+        | isJust $ updateCallbackQuery update =
+            updateCallbackQuery update >>= Just . Callback
+        | otherwise = updateMessage (pTraceShowId update)
                         >>= messageTextAndPrivate 
                         >>= parseRaw
             where parseRaw (private, txt) = 
@@ -148,16 +172,38 @@ evalBot = let
                 , replyMessageParseMode = Just MarkdownV2 
                 }
             return NoOp
-        Inline query input -> model <# do
+        InlineQ query input -> model <# do
             if T.null (T.strip input) then do
                 liftIO $ putStrLn "Empty inline query received"
-                sent <- liftClientM $ answerInline (Just "Type the expression") Nothing query
+                (sent, _) <- liftClientM $ answerInline (Just "Type the expression") Nothing Nothing query
                 unless (responseResult sent) $ liftIO $ putStrLn "WARNING: Inline query not sent"
             else do
                 liftIO $ putStrLn $ "Inline query: " ++ T.unpack input
-                res <- liftIO $ invokeMueval input muevalOpts
-                sent <- liftClientM $ answerInline (Just "Evaluate") (Just res) query
+                (sent, msgId) <- liftClientM $ answerInline (Just "Evaluate") (Just $ evalPending input) (Just dummyMarkup) query
                 unless (responseResult sent) $ liftIO $ putStrLn "WARNING: Inline query not sent"
+            return NoOp
+        InlineChosen ch -> model <# do
+            let input = chosenInlineResultQuery ch
+            liftIO $ putStrLn $ "Evaluating: " ++ T.unpack input
+            res <- liftIO $ invokeMueval input muevalOpts
+            liftIO $ putStrLn $ "Result: \n" ++ T.unpack res
+            m <- liftClientM $
+                API.editMessageText $ EditMessageTextRequest 
+                    Nothing 
+                    Nothing
+                    (chosenInlineResultInlineMessageId ch) 
+                    res 
+                    (Just MarkdownV2)
+                    Nothing
+                    Nothing
+            return NoOp
+        Callback cb -> model <# do
+            liftClientM $ answerCallbackQuery $ AnswerCallbackQueryRequest 
+                (callbackQueryId cb) 
+                (Just "Wait for the expression to evaluate")
+                Nothing
+                Nothing
+                Nothing
             return NoOp
     in BotApp { botInitialModel = ()
                 , botAction = flip updateToAction
@@ -169,7 +215,10 @@ evalBot = let
 run :: Token -> IO ()
 run token = do
     env <- defaultTelegramClientEnv token
-    startBot_ evalBot env
+    res <- startBot evalBot env
+    case res of
+        Left err -> putStrLn "ERROR: \n" >> print err
+        Right _ -> return ()
 
 botMain :: IO ()
 botMain = do
