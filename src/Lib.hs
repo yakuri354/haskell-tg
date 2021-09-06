@@ -38,7 +38,6 @@ import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Servant.Client (ClientM)
 import Crypto.Hash.Algorithms
 import Crypto.Hash
-import Debug.Pretty.Simple ( pTraceShowId )
 import qualified Telegram.Bot.API as API
 import Telegram.Bot.API.InlineMode
 import Data.Memory.Encoding.Base32 (toBase32)
