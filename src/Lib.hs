@@ -25,7 +25,7 @@ import GHC.Exception (SomeException(SomeException))
 import Control.Monad ( MonadPlus(mplus), when, mfilter, unless )
 import Data.List (stripPrefix)
 import Data.Function ( (&) )
-import Data.Char (isDigit)
+import Data.Char (isDigit, isPrint)
 import Data.Maybe (fromMaybe, isJust, fromJust)
 import System.Process (readProcess, readProcessWithExitCode)
 import System.Exit (ExitCode(ExitSuccess))
@@ -43,6 +43,8 @@ import Telegram.Bot.API.InlineMode
 import Data.Memory.Encoding.Base32 (toBase32)
 import Data.ByteArray.Encoding (convertToBase, Base (Base64, Base32))
 import Telegram.Bot.API.Types
+
+import Unicode
 
 type Model = ()
 data Action =
@@ -116,11 +118,11 @@ invokeMueval :: Text -> [String] -> IO Text
 invokeMueval input opts = do
             (code, out, err) <- readProcessWithExitCode "mueval" (opts ++ ["-e", T.unpack input]) ""
             return $ case code of 
-                    ExitSuccess -> parseOutput $ T.pack out
+                    ExitSuccess -> (parseOutput . T.pack . uniConv) out
                     ExitFailure _ -> T.unlines [
                             boldMD "Expression: " `T.append` codeMD (T.strip input),
                             "",
-                            codeMD $ T.pack $ chooseOne out err "Internal error occured while evaluating"
+                            (codeMD . T.pack . uniConv) $ chooseOne out err "Internal error occured while evaluating"
                         ]
             where
                 chooseOne a b c
