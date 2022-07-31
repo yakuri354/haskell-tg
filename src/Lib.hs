@@ -165,7 +165,7 @@ evalBot = let
             chatID <- fromJust <$> currentChatId 
             msgID <- getEditMessageId <&> \x -> x <&> \case
                 EditChatMessageId _ msg -> msg
-                EditInlineMessageId msg -> msg
+                EditInlineMessageId _ -> Nothing
             liftIO $ putStrLn $ "Expr: " ++ T.unpack input ++ " from " ++ show chatID
             res <- liftIO $ invokeMueval input muevalOpts
             reply (toReplyMessage res) { 
