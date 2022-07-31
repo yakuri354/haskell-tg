@@ -45,7 +45,7 @@ extra-deps:
   - random-strings-0.1.1.0@sha256:935a7a23dab45411960df77636a29b44ce42b89eeb15f2b1e809d771491fa677,2517
   # - telegram-bot-simple-0.3.7@sha256:f7a7edb82b697d332523d0affce14bcf907d9b00c91c40d327eea8104259a6a7,3807
   - github: yakuri354/telegram-bot-simple
-    commit: e82619e1341e8d089c0f791b29f990caf0978add
+    commit: 99f74b52991b58a65befa90fe31b925c752236a0
   - servant-multipart-client-0.12.1@sha256:d043063e2f33eab86840f87c4bdb16eb3fe4a5847a0b118e4f4265cf3ba4c9b3,1892
 
 # Override default flag values for local packages and extra-deps

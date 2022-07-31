@@ -26,16 +26,16 @@ packages:
   original:
     hackage: random-strings-0.1.1.0@sha256:935a7a23dab45411960df77636a29b44ce42b89eeb15f2b1e809d771491fa677,2517
 - completed:
-    size: 31315
-    url: https://github.com/yakuri354/telegram-bot-simple/archive/e82619e1341e8d089c0f791b29f990caf0978add.tar.gz
+    size: 31291
+    url: https://github.com/yakuri354/telegram-bot-simple/archive/99f74b52991b58a65befa90fe31b925c752236a0.tar.gz
     name: telegram-bot-simple
     version: 0.3.7
-    sha256: 6a78a8b111ad3dec15dff0c054a991c82a6485ce9e5f961c018c622b2c738def
+    sha256: 3b9f85fc76b6ebfcf5aea93df69021910f0b496e8150a7006ef400ad77c4fc28
     pantry-tree:
       size: 2347
-      sha256: 16d2f31f2e9c759f73e991ae29ecf63aacea2df2f5cab94cb11c02daefbd08ee
+      sha256: d6b65e62b5854286a12039114da0aed421f07969711c9fb28c84648489912a5d
   original:
-    url: https://github.com/yakuri354/telegram-bot-simple/archive/e82619e1341e8d089c0f791b29f990caf0978add.tar.gz
+    url: https://github.com/yakuri354/telegram-bot-simple/archive/99f74b52991b58a65befa90fe31b925c752236a0.tar.gz
 - completed:
     hackage: servant-multipart-client-0.12.1@sha256:d043063e2f33eab86840f87c4bdb16eb3fe4a5847a0b118e4f4265cf3ba4c9b3,1892
     pantry-tree:
